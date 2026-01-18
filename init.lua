@@ -5,7 +5,7 @@
 -- Leader key
 vim.g.mapleader = " "
 
--- ============================================
+
 -- General Options
 -- ============================================
 vim.opt.number = true
@@ -62,6 +62,12 @@ require("lazy").setup({
       require("mason").setup()
     end,
   },
+  {
+  "folke/trouble.nvim",
+  dependencies = { "nvim-tree/nvim-web-devicons" },
+  opts = {},
+},
+
 
   -- Mason LSP Config (connects Mason with nvim-lspconfig)
   {
@@ -69,7 +75,7 @@ require("lazy").setup({
     dependencies = { "neovim/nvim-lspconfig" },
     config = function()
       require("mason-lspconfig").setup({
-        ensure_installed = { "clangd", "ts_ls", "html", "cssls", "jsonls", "eslint" },
+        ensure_installed = { "clangd", "ts_ls", "html", "cssls", "jsonls", "eslint", "pyright" },
         automatic_installation = true,
       })
     end,
@@ -113,7 +119,30 @@ require("lazy").setup({
     end,
   },
 
-  -- Run Code in Integrated Terminal
+  {
+  "stevearc/conform.nvim",
+  event = { "BufReadPre", "BufNewFile" },
+  config = function()
+    require("conform").setup({
+      formatters_by_ft = {
+        lua = { "stylua" },
+        javascript = { "prettier" },
+        typescript = { "prettier" },
+        html = { "prettier" },
+        css = { "prettier" },
+        json = { "prettier" },
+        c = { "clang_format" },
+        cpp = { "clang_format" },
+      },
+    })
+
+    vim.keymap.set("n", "<leader>f", function()
+      require("conform").format({ async = true })
+    end, { desc = "Format file" })
+  end,
+},
+
+   -- Run Code in Integrated Terminal
   {
     "akinsho/toggleterm.nvim",
     version = "*",
@@ -211,15 +240,29 @@ cmp.setup({
 -- ============================================ 
 -- LSP Setup (MERN Stack) 
 -- ============================================ 
+require("lspconfig").pyright.setup({
+  capabilities = capabilities,
+  settings = {
+    python = {
+      analysis = {
+        autoSearchPaths = true,
+        useLibraryCodeForTypes = true,
+        diagnosticMode = "workspace",
+      },
+    },
+  },
+})
+
 local capabilities = require("cmp_nvim_lsp").default_capabilities() 
 local lspconfig = require("lspconfig") 
 
-local servers = { "ts_ls", "html", "cssls", "jsonls", "eslint","clangd" } 
+local servers = { "ts_ls", "html", "cssls", "jsonls", "eslint","clangd", "pyright" } 
 for _, s in ipairs(servers) do 
   if lspconfig[s] then 
     lspconfig[s].setup({ capabilities = capabilities }) 
   end 
 end 
+
 
 -- ============================================
 -- Status Line (Lualine)
@@ -250,6 +293,22 @@ require("bufferline").setup({
     show_buffer_close_icons = true,
     show_close_icon = false,
     diagnostics = "nvim_lsp",
+  },
+})
+
+-- ============================
+-- Conform Setup (Auto Formatter)
+-- ============================
+require("conform").setup({
+  formatters_by_ft = {
+    lua = { "stylua" },
+    javascript = { "prettier" },
+    typescript = { "prettier" },
+    html = { "prettier" },
+    css = { "prettier" },
+    json = { "prettier" },
+    c = { "clang_format" },
+    cpp = { "clang_format" },
   },
 })
 
@@ -289,6 +348,18 @@ vim.keymap.set("v", "<A-Up>", ":m '<-2<CR>gv=gv", { noremap = true, silent = tru
 vim.keymap.set("v", "<A-Down>", ":m '>+1<CR>gv=gv", { noremap = true, silent = true })
 
 vim.keymap.set("n", "<C-f>", "/", { noremap = true, silent = false })
+
+-- Navigate splits with <leader> + arrows
+vim.keymap.set('n', '<leader><Left>',  '<C-w>h', { silent = true })
+vim.keymap.set('n', '<leader><Right>', '<C-w>l', { silent = true })
+vim.keymap.set('n', '<leader><Up>',    '<C-w>k', { silent = true })
+vim.keymap.set('n', '<leader><Down>',  '<C-w>j', { silent = true })
+
+-- Error --
+vim.keymap.set("n", "<leader>xx", "<cmd>Trouble diagnostics toggle<cr>", { desc = "Diagnostics (file)" })
+vim.keymap.set("n", "<leader>xw", "<cmd>Trouble diagnostics toggle workspace=true<cr>", { desc = "Diagnostics (workspace)" })
+vim.keymap.set("n", "<leader>xl", "<cmd>Trouble loclist toggle<cr>", { desc = "Location List" })
+vim.keymap.set("n", "<leader>xq", "<cmd>Trouble qflist toggle<cr>", { desc = "Quickfix List" })
 
 require("which-key").setup()
 
